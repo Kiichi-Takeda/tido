@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-// GET: 全TODOを取得
+// GET: 全TODOを取得（カテゴリー情報を含む）
 export async function GET() {
   const { data, error } = await supabase
     .from('todos')
-    .select('*')
+    .select(`
+      *,
+      categories (
+        id,
+        name,
+        color
+      )
+    `)
+    .order('due_date', { ascending: true })
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -17,7 +25,7 @@ export async function GET() {
 
 // POST: 新しいTODOを作成
 export async function POST(request: Request) {
-  const { title } = await request.json()
+  const { title, due_date, category_id } = await request.json()
 
   if (!title) {
     return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -25,8 +33,15 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from('todos')
-    .insert([{ title }])
-    .select()
+    .insert([{ title, due_date, category_id }])
+    .select(`
+      *,
+      categories (
+        id,
+        name,
+        color
+      )
+    `)
     .single()
 
   if (error) {
@@ -38,7 +53,7 @@ export async function POST(request: Request) {
 
 // PUT: TODOを更新
 export async function PUT(request: Request) {
-  const { id, title, completed } = await request.json()
+  const { id, title, completed, due_date, category_id } = await request.json()
 
   if (!id) {
     return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -46,9 +61,16 @@ export async function PUT(request: Request) {
 
   const { data, error } = await supabase
     .from('todos')
-    .update({ title, completed })
+    .update({ title, completed, due_date, category_id })
     .eq('id', id)
-    .select()
+    .select(`
+      *,
+      categories (
+        id,
+        name,
+        color
+      )
+    `)
     .single()
 
   if (error) {
